@@ -6,7 +6,9 @@ import platform
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QLabel, QLineEdit, QRadioButton, QPushButton, QFileDialog,
                              QProgressBar, QButtonGroup, QGroupBox, QMessageBox)
-from PyQt5.QtCore import pyqtSignal, QObject
+from PyQt5.QtCore import pyqtSignal, QObject, Qt
+from PyQt5.QtGui import QDesktopServices, QCursor
+from PyQt5.QtCore import QUrl
 import yt_dlp
 
 
@@ -157,6 +159,13 @@ class YoutubeDownloaderApp(QMainWindow):
         self.download_button.clicked.connect(self.start_download)
         main_layout.addWidget(self.download_button)
 
+        # 깃허브 링크 추가 (우측 정렬)
+        github_link = QLabel('<a href="https://github.com/PriuS2/YoutubeDownloader">Github link</a>')
+        github_link.setAlignment(Qt.AlignRight)
+        github_link.setOpenExternalLinks(True)
+        github_link.setCursor(QCursor(Qt.PointingHandCursor))
+        main_layout.addWidget(github_link)
+
         # 미디어 타입에 따라 오디오 형식 옵션 활성화/비활성화
         self.video_radio.toggled.connect(self.toggle_audio_format_options)
         self.toggle_audio_format_options()
@@ -204,29 +213,43 @@ class YoutubeDownloaderApp(QMainWindow):
     def update_progress(self, progress_data):
         """다운로드 진행 상황 업데이트"""
         if progress_data['status'] == 'downloading':
+            # 기본 진행 정보
+            status_text = '다운로드 중...'
+            percentage = 0
+
+            # 총 바이트 정보가 있는 경우 퍼센트 계산
             if 'total_bytes' in progress_data and progress_data['total_bytes'] > 0:
-                # 퍼센트 계산
                 percentage = int(progress_data['downloaded_bytes'] / progress_data['total_bytes'] * 100)
+                status_text = f'{status_text} {percentage}%'
                 self.progress_bar.setValue(percentage)
 
-                # 속도 계산 (바이트/초 -> MB/s로 변환)
-                speed = progress_data.get('speed', 0)
-                if speed:
-                    speed_str = f"{speed / 1024 / 1024:.2f} MB/s"
-                else:
-                    speed_str = "계산 중..."
+                # 다운로드 크기 표시 (MB 단위)
+                total_mb = progress_data['total_bytes'] / (1024 * 1024)
+                downloaded_mb = progress_data['downloaded_bytes'] / (1024 * 1024)
+                status_text = f'{status_text} ({downloaded_mb:.2f}MB / {total_mb:.2f}MB)'
 
-                # 남은 시간 계산
-                eta = progress_data.get('eta', None)
-                if eta is not None:
-                    # 초 단위의 eta를 분:초 형식으로 변환
-                    minutes, seconds = divmod(eta, 60)
-                    eta_str = f"{int(minutes)}분 {int(seconds)}초"
-                else:
-                    eta_str = "계산 중..."
+            # 속도 계산 (바이트/초 -> MB/s로 변환)
+            speed = progress_data.get('speed', 0)
+            if speed:
+                speed_str = f"{speed / 1024 / 1024:.2f} MB/s"
+                status_text = f'{status_text}, 속도: {speed_str}'
 
-                # 상태 레이블 업데이트
-                self.status_label.setText(f'다운로드 중... {percentage}% (속도: {speed_str}, 남은 시간: {eta_str})')
+            # 남은 시간 계산
+            eta = progress_data.get('eta', None)
+            if eta is not None:
+                # 초 단위의 eta를 분:초 형식으로 변환
+                minutes, seconds = divmod(eta, 60)
+                eta_str = f"{int(minutes)}분 {int(seconds)}초"
+                status_text = f'{status_text}, 남은 시간: {eta_str}'
+
+            # Fragment 정보 추가 (콘솔과 유사하게)
+            fragment_info = ''
+            if 'fragment_index' in progress_data and 'fragment_count' in progress_data:
+                fragment_info = f" (조각 {progress_data['fragment_index']}/{progress_data['fragment_count']})"
+                status_text = f'{status_text}{fragment_info}'
+
+            # 상태 레이블 업데이트
+            self.status_label.setText(status_text)
 
     def download_finished(self, file_path):
         """다운로드 완료 처리"""
@@ -234,18 +257,22 @@ class YoutubeDownloaderApp(QMainWindow):
         self.status_label.setText(f'다운로드 완료: {os.path.basename(file_path)}')
         self.download_button.setEnabled(True)
 
-        # 다운로드 완료 메시지 박스에 열기 버튼 추가
+        # 다운로드 완료 메시지 박스에 열기 버튼과 폴더 열기 버튼 추가
         self.completed_file_path = file_path
         msg_box = QMessageBox(self)
         msg_box.setWindowTitle('완료')
         msg_box.setText(f'다운로드가 완료되었습니다.\n파일: {file_path}')
         msg_box.setStandardButtons(QMessageBox.Ok)
         open_button = msg_box.addButton('파일 열기', QMessageBox.ActionRole)
+        open_folder_button = msg_box.addButton('폴더 열기', QMessageBox.ActionRole)
         msg_box.exec_()
 
-        # '파일 열기' 버튼이 클릭되었는지 확인
-        if msg_box.clickedButton() == open_button:
+        # 버튼에 따른 동작 처리
+        clicked_button = msg_box.clickedButton()
+        if clicked_button == open_button:
             self.open_file(file_path)
+        elif clicked_button == open_folder_button:
+            self.open_folder(os.path.dirname(file_path))
 
     def download_error(self, error_msg):
         """다운로드 오류 처리"""
@@ -265,6 +292,19 @@ class YoutubeDownloaderApp(QMainWindow):
             self.status_label.setText(f'파일 열기: {os.path.basename(file_path)}')
         except Exception as e:
             QMessageBox.warning(self, '경고', f'파일을 열 수 없습니다:\n{str(e)}')
+
+    def open_folder(self, folder_path):
+        """다운로드된 파일이 있는 폴더 열기"""
+        try:
+            if platform.system() == 'Windows':
+                os.startfile(folder_path)
+            elif platform.system() == 'Darwin':  # macOS
+                subprocess.call(['open', folder_path])
+            else:  # Linux
+                subprocess.call(['xdg-open', folder_path])
+            self.status_label.setText(f'폴더 열기: {os.path.basename(folder_path)}')
+        except Exception as e:
+            QMessageBox.warning(self, '경고', f'폴더를 열 수 없습니다:\n{str(e)}')
 
 
 if __name__ == '__main__':
