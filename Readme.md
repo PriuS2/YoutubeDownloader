@@ -1,6 +1,5 @@
 # 유튜브 다운로더 (YouTube Downloader)
-
-PyQt5로 구현된 심플하고 직관적인 유튜브 동영상/오디오 다운로더 애플리케이션입니다.
+유튜브 동영상/오디오 다운로더 애플리케이션입니다.
 
 ![ex_screenshot](https://github.com/PriuS2/YoutubeDownloader/blob/main/img/image.png?raw=true)
 
@@ -63,10 +62,6 @@ pip install PyQt5 yt-dlp
 ## 라이선스
 
 MIT License
-
-## 기여하기
-
-이슈 또는 풀 리퀘스트를 통해 프로젝트 개선에 기여해주세요.
 
 ## 주의사항
 
