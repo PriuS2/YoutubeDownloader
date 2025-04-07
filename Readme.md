@@ -13,7 +13,7 @@ PyQt5로 구현된 심플하고 직관적인 유튜브 동영상/오디오 다�
 
 ## 설치 방법
 
-### Portable exe
+### Portable .exe
 - [Release](https://github.com/PriuS2/YoutubeDownloader/releases)
 
 ### 요구 사항
