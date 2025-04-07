@@ -2,6 +2,8 @@
 
 PyQt5로 구현된 심플하고 직관적인 유튜브 동영상/오디오 다운로더 애플리케이션입니다.
 
+![ex_screenshot](https://github.com/PriuS2/YoutubeDownloader/blob/main/img/image.png?raw=true)
+
 ## 주요 기능
 
 - 유튜브 URL을 통한 간편한 다운로드
