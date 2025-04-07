@@ -32,9 +32,7 @@ pip install PyQt5 yt-dlp
 오디오 다운로드 기능을 사용하려면 FFmpeg가 필요합니다:
 
 - **Windows**: [FFmpeg 공식 사이트](https://www.ffmpeg.org/download.html)에서 다운로드 후 PATH에 추가 or 동일경로에 압축풀기
-- **macOS**: `brew install ffmpeg`
-- **Linux**: `sudo apt install ffmpeg` 또는 해당 배포판의 패키지 관리자 사용
-
+  
 ## 사용 방법
 
 1. 애플리케이션 실행:
