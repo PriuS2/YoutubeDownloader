@@ -1,4 +1,4 @@
-# YouTube Audio Downloader
+# YouTube Downloader
 
 이 프로젝트는 YouTube 동영상에서 오디오만 추출하여 다운로드하는 간단한 Python 스크립트입니다.
 
